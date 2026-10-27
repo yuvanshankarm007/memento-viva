@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { GatewayMode, OfrendaItem, SystemStatus } from './types';
 import { fetchOfrendas, fetchSystemStatus } from './lib/api';
 import { soundManager } from './audio/soundManager';
+import { spookyAtmosphere } from './audio/spookyAtmosphere';
 
 import { Header } from './components/Header';
 import { GatewaySwitch } from './components/GatewaySwitch';
 import { SettingsModal } from './components/SettingsModal';
+import { AudioUnlockModal } from './components/AudioUnlockModal';
 
 // Ofrenda Components
 import { MarigoldPetalCanvas } from './components/ofrenda/MarigoldPetalCanvas';
@@ -19,6 +21,7 @@ import { CRTEffect } from './components/seance/CRTEffect';
 import { SpiritBox } from './components/seance/SpiritBox';
 import { OuijaBoard } from './components/seance/OuijaBoard';
 import { HauntedTerminal } from './components/seance/HauntedTerminal';
+import { GhostWhisperBanner } from './components/seance/GhostWhisperBanner';
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<GatewayMode>('ofrenda');
@@ -28,8 +31,16 @@ export const App: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFolkloreOpen, setIsFolkloreOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showAudioUnlock, setShowAudioUnlock] = useState(true);
 
   const [lastSpiritSpoken, setLastSpiritSpoken] = useState<string | null>(null);
+
+  const startAudioExperience = () => {
+    setShowAudioUnlock(false);
+    spookyAtmosphere.start();
+    soundManager.setMode(mode);
+    soundManager.startAmbient();
+  };
 
   const loadData = async () => {
     try {
@@ -46,11 +57,34 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    soundManager.setMode(mode);
+
+    // Auto-attempt to start audio immediately
+    try {
+      spookyAtmosphere.start();
+    } catch {}
+
+    // Global listener to immediately unlock audio on the very first user interaction
+    const unlockHandler = () => {
+      startAudioExperience();
+      window.removeEventListener('click', unlockHandler);
+      window.removeEventListener('keydown', unlockHandler);
+      window.removeEventListener('touchstart', unlockHandler);
+    };
+
+    window.addEventListener('click', unlockHandler, { once: true });
+    window.addEventListener('keydown', unlockHandler, { once: true });
+    window.addEventListener('touchstart', unlockHandler, { once: true });
+
+    return () => {
+      window.removeEventListener('click', unlockHandler);
+      window.removeEventListener('keydown', unlockHandler);
+      window.removeEventListener('touchstart', unlockHandler);
+    };
   }, []);
 
   const handleModeChange = (newMode: GatewayMode) => {
     setMode(newMode);
+    soundManager.setMode(newMode);
   };
 
   const isOfrenda = mode === 'ofrenda';
@@ -77,7 +111,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Areas */}
-      <main className="relative z-10 pb-16">
+      <main className="relative z-10 pb-24">
         {isOfrenda ? (
           <div>
             <PapelPicadoBanner />
@@ -103,6 +137,9 @@ export const App: React.FC = () => {
         )}
       </main>
 
+      {/* Floating Ghost Whisper Banner (Plays Creepy Voices Every 5 Seconds!) */}
+      <GhostWhisperBanner />
+
       {/* Footer & DEV Challenge Submission Credits */}
       <footer className="relative z-10 border-t border-slate-900 bg-black/90 py-8 px-4 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -124,6 +161,11 @@ export const App: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Audio Entry Modal (Unlocks browser audio if restricted) */}
+      {showAudioUnlock && (
+        <AudioUnlockModal onEnter={startAudioExperience} />
+      )}
 
       {/* Modals & Drawers */}
       <AddOfferingModal
