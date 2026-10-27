@@ -1,0 +1,37 @@
+# Render Blueprint Specification
+# Best Use of Render - Hacktoberfest 2026 Week 4 DEV Challenge
+# Deploy Memento Viva as a full-stack open-source AI service with static frontend and Node.js agent backend
+
+services:
+  - type: web
+    name: memento-viva-service
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      # Google Gemma Open-Weight Model configuration
+      - key: GEMMA_API_MODE
+        value: ollama # Options: ollama | huggingface | fallback
+      - key: OLLAMA_HOST
+        value: http://localhost:11434
+      - key: GEMMA_MODEL_NAME
+        value: gemma2:2b
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      # ElevenLabs Voice AI for Spirit Whispers & Ethereal EVP Audio
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: 21m00Tcm4TlvDq8ikWAM # Rachel / Ethereal Whisper Voice
+      # MongoDB Atlas - Eternal Community Memory Vault & Altar Registry
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: memento_viva
