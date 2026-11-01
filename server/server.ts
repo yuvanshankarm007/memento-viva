@@ -7,11 +7,24 @@ import dotenv from 'dotenv';
 
 import { initMongo, isMongoConnected, getAllOfrendas, addOfrenda, lightCandleOnOfrenda, updateCalaveraPoem, getRecentSeances, connectRuntimeMongo } from './db/mongoAtlas.js';
 import { checkGemmaHealth } from './models/gemmaClient.js';
-import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs, elevenLabsClient, setRuntimeElevenLabsKey, getRuntimeElevenLabsConfig } from './models/elevenLabsClient.js';
+import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs, elevenLabsClient, setRuntimeElevenLabsKey, getRuntimeElevenLabsConfig, updateEnvFile } from './models/elevenLabsClient.js';
+import * as Sentry from '@sentry/node';
 import { mastraHub } from './mastra/index.js';
 import { SystemStatus } from './types.js';
 
 dotenv.config();
+
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      tracesSampleRate: 1.0,
+    });
+    console.log('🛡️ [Sentry] Agent tracing and error monitoring active');
+  } catch (err) {
+    console.warn('⚠️ [Sentry] Init failed:', (err as Error).message);
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -260,6 +273,26 @@ app.post('/api/settings/mongo', async (req, res) => {
     return res.json({ success: true, message: result.message });
   }
   res.status(500).json({ error: result.message });
+});
+
+// Dynamic configuration endpoint for setting Sentry DSN via UI
+app.post('/api/settings/sentry', (req, res) => {
+  const { dsn } = req.body;
+  if (!dsn || !dsn.trim()) {
+    return res.status(400).json({ error: 'Sentry DSN is required' });
+  }
+  const cleanDsn = dsn.trim();
+  process.env.SENTRY_DSN = cleanDsn;
+  updateEnvFile('SENTRY_DSN', cleanDsn);
+  try {
+    Sentry.init({
+      dsn: cleanDsn,
+      tracesSampleRate: 1.0,
+    });
+    return res.json({ success: true, message: 'Sentry DSN permanently saved to .env & activated' });
+  } catch (err) {
+    return res.status(400).json({ error: (err as Error).message });
+  }
 });
 
 // Sound effects route powered by ElevenLabs Sound Generation API

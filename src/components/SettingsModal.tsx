@@ -48,6 +48,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
   const [mongoMessage, setMongoMessage] = useState<string | null>(null);
   const [isConnectingMongo, setIsConnectingMongo] = useState(false);
 
+  // Sentry Observability State
+  const [sentryDsn, setSentryDsn] = useState('');
+  const [sentryMessage, setSentryMessage] = useState<string | null>(null);
+  const [isSavingSentry, setIsSavingSentry] = useState(false);
+
+  const handleSaveSentry = async () => {
+    if (!sentryDsn.trim()) return;
+    setIsSavingSentry(true);
+    setSentryMessage(null);
+    try {
+      const res = await fetch('/api/settings/sentry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dsn: sentryDsn.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSentryMessage('✓ ' + (data.message || 'Sentry DSN saved & active!'));
+      } else {
+        setSentryMessage('✗ ' + (data.error || 'Failed to save Sentry DSN'));
+      }
+    } catch {
+      setSentryMessage('✗ Connection error');
+    } finally {
+      setIsSavingSentry(false);
+    }
+  };
+
   const handleConnectMongo = async () => {
     if (!mongoUri.trim()) return;
     setIsConnectingMongo(true);
@@ -621,6 +649,61 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, s
             <p className="text-xs text-slate-300 mb-2 font-sans">
               Includes <code className="text-cyan-300">render.yaml</code> specification and multi-stage <code className="text-cyan-300">Dockerfile</code> for automated zero-downtime deployment to Render Web Services with health check at <code className="text-cyan-300">/api/health</code>.
             </p>
+          </div>
+
+          {/* 5. Sentry Observability (Optional) */}
+          <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-purple-300 text-sm flex items-center gap-2">
+                <Shield className="w-4 h-4 text-purple-400" />
+                Observability & Tracing: Sentry (Optional)
+              </span>
+              <span className="text-[11px] px-2 py-0.5 rounded bg-purple-900/40 text-purple-200 border border-purple-600/50">
+                Optional
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mb-3 font-sans">
+              Monitors backend errors, unhandled exceptions, and Mastra AI agent response latency.
+            </p>
+
+            <div className="p-3 rounded-xl bg-black/60 border border-purple-900/60 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-purple-300 font-bold">Sentry DSN:</span>
+                <a 
+                  href="https://sentry.io" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  Get free Sentry account
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  value={sentryDsn}
+                  onChange={(e) => setSentryDsn(e.target.value)}
+                  placeholder="https://key@o123456.ingest.sentry.io/7891011..."
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-black border border-purple-900 focus:border-purple-400 focus:outline-none text-white text-xs font-mono placeholder:text-slate-600"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveSentry}
+                  disabled={isSavingSentry || !sentryDsn.trim()}
+                  className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingSentry ? 'Saving...' : 'Save DSN'}</span>
+                </button>
+              </div>
+
+              {sentryMessage && (
+                <div className={`text-[11px] font-mono ${sentryMessage.startsWith('✓') ? 'text-purple-300 font-bold' : 'text-red-400'}`}>
+                  {sentryMessage}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
