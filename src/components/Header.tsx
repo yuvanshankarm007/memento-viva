@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({ mode, systemStatus, onOpenSettin
             </button>
           )}
 
-          {/* Spooky 5-second voices toggle button */}
+          {/* Spooky 8-second voices toggle button */}
           <button
             onClick={handleToggleVoices}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all ${
@@ -139,10 +139,10 @@ export const Header: React.FC<HeaderProps> = ({ mode, systemStatus, onOpenSettin
                 ? 'bg-purple-950/60 border-purple-500/50 text-purple-200 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
                 : 'bg-slate-900/60 border-slate-700 text-slate-500'
             }`}
-            title={isVoicesEnabled ? 'Creepy spirit voices every 5s: Active' : 'Creepy voices: Disabled'}
+            title={isVoicesEnabled ? 'Creepy spirit voices every 8s: Active' : 'Creepy voices: Disabled'}
           >
             <Ghost className={`w-3.5 h-3.5 ${isVoicesEnabled ? 'text-purple-400 animate-pulse' : 'text-slate-500'}`} />
-            <span className="hidden sm:inline">{isVoicesEnabled ? '5s Voices' : 'Mute Voices'}</span>
+            <span className="hidden sm:inline">{isVoicesEnabled ? '8s Voices' : 'Mute Voices'}</span>
           </button>
 
           {/* Audio toggle button */}

@@ -12,7 +12,7 @@ import { ofrendaAudio } from './ofrendaAudio';
  *    - Rhythmic sub-audible heartbeat (50 BPM)
  *    - Random eerie minor music-box bells
  * 2. Automated Creepy Voice Channeler:
- *    - Triggers every 5 seconds with chilling, varied phrases
+ *    - Triggers every 8 seconds with chilling, varied phrases
  *    - Spatial 3D binaural stereo panning (whispers in left or right ear)
  *    - SpeechSynthesis with eerie formant pitch/rate + spectral whoosh FX
  *    - Subtitle event subscription for visual ectoplasm captions
@@ -405,7 +405,7 @@ class SpookyAtmosphereEngine {
   }
 
   /**
-   * Schedule creepy voices to speak every 5 seconds
+   * Schedule creepy voices to speak every 8 seconds
    */
   private scheduleWhispers() {
     clearInterval(this.whisperTimer);
@@ -418,12 +418,12 @@ class SpookyAtmosphereEngine {
       }
     }, 1500);
 
-    // Then recurrently every 5000ms (5 seconds)
+    // Then recurrently every 8000ms (8 seconds)
     this.whisperTimer = setInterval(() => {
       if (this.isRunning && this.isVoicesEnabled) {
         this.triggerSingleWhisper();
       }
-    }, 5000);
+    }, 8000);
   }
 
   /**

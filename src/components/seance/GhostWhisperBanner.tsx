@@ -18,12 +18,12 @@ export const GhostWhisperBanner: React.FC = () => {
     const unsubscribe = spookyAtmosphere.subscribeToWhispers((event) => {
       setCurrentWhisper(event);
       setIsVisible(true);
-      setCountdown(5);
+      setCountdown(8);
     });
 
-    // 5-second countdown ticker
+    // 8-second countdown ticker
     const timer = setInterval(() => {
-      setCountdown(prev => (prev <= 1 ? 5 : prev - 1));
+      setCountdown(prev => (prev <= 1 ? 8 : prev - 1));
     }, 1000);
 
     return () => {
@@ -72,7 +72,7 @@ export const GhostWhisperBanner: React.FC = () => {
                   ? 'bg-emerald-950 text-emerald-300 border-emerald-700/60'
                   : 'bg-red-950/60 text-red-300 border-red-700/60'
               }`}
-              title="Toggle automatic 5-second creepy voices"
+              title="Toggle automatic 8-second creepy voices"
             >
               {isVoicesEnabled ? 'Voices: ON' : 'Voices: OFF'}
             </button>
@@ -95,10 +95,10 @@ export const GhostWhisperBanner: React.FC = () => {
           </p>
         </div>
 
-        {/* 5-second progress bar */}
+        {/* 8-second progress bar */}
         <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden">
           <div 
-            style={{ width: `${(countdown / 5) * 100}%` }}
+            style={{ width: `${(countdown / 8) * 100}%` }}
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-1000 ease-linear shadow-[0_0_8px_#10b981]"
           />
         </div>
