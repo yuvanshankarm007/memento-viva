@@ -19,8 +19,10 @@ if (process.env.SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       tracesSampleRate: 1.0,
+      environment: process.env.NODE_ENV || 'development',
     });
     console.log('🛡️ [Sentry] Agent tracing and error monitoring active');
+    Sentry.captureMessage('🕯️ Memento Viva portal connected to Sentry monitoring');
   } catch (err) {
     console.warn('⚠️ [Sentry] Init failed:', (err as Error).message);
   }
@@ -353,6 +355,10 @@ app.get('*', (req, res, next) => {
     }
   });
 });
+
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 app.listen(PORT, () => {
   console.log(`\n🕯️ MEMENTO VIVA PORTAL AWAKENED ON PORT ${PORT}`);
