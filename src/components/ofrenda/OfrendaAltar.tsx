@@ -4,6 +4,7 @@ import { OfrendaItem } from '../../types';
 import { soundManager } from '../../audio/soundManager';
 import { speakSpokenText, stopSpeaking } from '../../audio/speechSynthesis';
 import { lightCandle, generateCalavera } from '../../lib/api';
+import { CopalBurner } from './CopalBurner';
 
 interface OfrendaAltarProps {
   ofrendas: OfrendaItem[];
@@ -118,6 +119,11 @@ export const OfrendaAltar: React.FC<OfrendaAltarProps> = ({ ofrendas, onOpenAddM
             <span>Place an Offering / Honor Someone</span>
           </button>
         </div>
+      </div>
+
+      {/* Sahumador de Copal (Sacred Incense & 432Hz Drone) */}
+      <div className="max-w-md mx-auto mb-10">
+        <CopalBurner />
       </div>
 
       {/* The Multi-Tier Altar Display */}

@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 
 import { initMongo, isMongoConnected, getAllOfrendas, addOfrenda, lightCandleOnOfrenda, updateCalaveraPoem, getRecentSeances } from './db/mongoAtlas.js';
 import { checkGemmaHealth } from './models/gemmaClient.js';
-import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs } from './models/elevenLabsClient.js';
+import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs, elevenLabsClient } from './models/elevenLabsClient.js';
 import { mastraHub } from './mastra/index.js';
 import { SystemStatus } from './types.js';
 
@@ -201,6 +201,35 @@ app.post('/api/tts/speak', async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Audio synthesis failed', details: (error as Error).message });
+  }
+});
+
+// Sound effects route powered by ElevenLabs Sound Generation API
+app.post('/api/audio/sound-effect', async (req, res) => {
+  const { type = 'owl', prompt, duration = 3.5 } = req.body;
+  try {
+    if (!elevenLabsClient.hasKey()) {
+      return res.status(503).json({ error: 'ElevenLabs key not configured on server', fallbackToWebAudio: true });
+    }
+
+    let buffer: Buffer;
+    if (type === 'owl') {
+      buffer = await elevenLabsClient.generateOwlHoot();
+    } else if (type === 'bat') {
+      buffer = await elevenLabsClient.generateBatSwarm();
+    } else {
+      buffer = await elevenLabsClient.generateSoundEffect({ text: prompt || 'supernatural sound', durationSeconds: duration });
+    }
+
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': buffer.length.toString(),
+      'Cache-Control': 'public, max-age=86400'
+    });
+    return res.send(buffer);
+  } catch (error) {
+    console.warn('ElevenLabs sound effect error, prompting fallback:', (error as Error).message);
+    return res.status(500).json({ error: (error as Error).message, fallbackToWebAudio: true });
   }
 });
 
