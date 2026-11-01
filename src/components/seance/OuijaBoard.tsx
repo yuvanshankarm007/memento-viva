@@ -13,6 +13,40 @@ const LETTERS_ROW_1 = 'ABCDEFGHIJKLM'.split('');
 const LETTERS_ROW_2 = 'NOPQRSTUVWXYZ'.split('');
 const NUMBERS = '1234567890'.split('');
 
+/**
+ * Geometric calculation of planchette target coordinates for all letters,
+ * numbers, and board keywords across both wooden arcs.
+ */
+export function getGlyphCoordinates(glyph: string): { x: number; y: number } {
+  const upper = glyph.toUpperCase().trim();
+  if (!upper) return { x: 50, y: 65 };
+  if (upper === 'YES') return { x: 24, y: 22 };
+  if (upper === 'NO') return { x: 76, y: 22 };
+  if (upper === 'GOODBYE') return { x: 50, y: 85 };
+
+  const row1Idx = LETTERS_ROW_1.indexOf(upper);
+  if (row1Idx !== -1) {
+    const x = 14 + ((row1Idx + 0.5) / LETTERS_ROW_1.length) * 72;
+    const arcDip = Math.sin((row1Idx / (LETTERS_ROW_1.length - 1)) * Math.PI) * 3;
+    return { x: Math.round(x * 10) / 10, y: Math.round((43 - arcDip) * 10) / 10 };
+  }
+
+  const row2Idx = LETTERS_ROW_2.indexOf(upper);
+  if (row2Idx !== -1) {
+    const x = 16 + ((row2Idx + 0.5) / LETTERS_ROW_2.length) * 68;
+    const arcDip = Math.sin((row2Idx / (LETTERS_ROW_2.length - 1)) * Math.PI) * 2.5;
+    return { x: Math.round(x * 10) / 10, y: Math.round((55 - arcDip) * 10) / 10 };
+  }
+
+  const numIdx = NUMBERS.indexOf(upper);
+  if (numIdx !== -1) {
+    const x = 22 + ((numIdx + 0.5) / NUMBERS.length) * 56;
+    return { x: Math.round(x * 10) / 10, y: 67 };
+  }
+
+  return { x: 50, y: 65 };
+}
+
 export const OuijaBoard: React.FC<OuijaBoardProps> = ({
   spellTargetText,
   className = '',
@@ -145,43 +179,36 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({
     }
   };
 
-  // Trigger automated ghost spelling of a word
+  // Trigger automated ghost spelling of a word using procedural coordinates
   const spellWord = (word: string) => {
     if (isAutoSpellingRef.current) return;
     isAutoSpellingRef.current = true;
     setSpelledMessage('');
 
-    const targetCoords: Record<string, { x: number; y: number }> = {
-      'G': { x: 50, y: 40 },
-      'E': { x: 38, y: 41 },
-      'M': { x: 80, y: 42 },
-      'A': { x: 18, y: 44 },
-      'S': { x: 44, y: 53 },
-      'O': { x: 25, y: 53 },
-      'U': { x: 55, y: 53 },
-      'L': { x: 75, y: 41 },
-      'Y': { x: 74, y: 54 },
-      'N': { x: 20, y: 53 }
-    };
-
     let charIndex = 0;
-    const chars = word.toUpperCase().split('');
+    // Extract alphanumeric characters only
+    const chars = word.toUpperCase().replace(/[^A-Z0-9]/g, '').split('');
+    if (chars.length === 0) {
+      isAutoSpellingRef.current = false;
+      return;
+    }
 
     const moveToNextChar = () => {
       if (charIndex >= chars.length) {
         isAutoSpellingRef.current = false;
         seanceAudio.updatePlanchetteDrag(0);
         seanceAudio.playPlanchetteTap();
+        onMessageComplete?.(word);
         return;
       }
 
       const char = chars[charIndex];
-      const target = targetCoords[char] || { x: 50, y: 50 };
+      const target = getGlyphCoordinates(char);
 
       // Animate glide
       const startX = planchettePos.x;
       const startY = planchettePos.y;
-      const duration = 750;
+      const duration = 700;
       const startTime = performance.now();
 
       const glide = (now: number) => {
@@ -205,7 +232,7 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({
           setActiveGlyph(char);
           setSpelledMessage(prev => prev + char);
           charIndex++;
-          setTimeout(moveToNextChar, 400);
+          setTimeout(moveToNextChar, 380);
         }
       };
 
@@ -400,7 +427,7 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({
 
         <div className="flex items-center gap-2">
           <span className="text-stone-400 text-[11px]">Channel Word:</span>
-          {['SOUL', 'GEMMA', 'MICTLAN'].map(word => (
+          {['SOUL', 'GEMMA', 'MICTLAN', 'ALAN', 'FRIDA'].map(word => (
             <button
               key={word}
               onClick={() => spellWord(word)}

@@ -29,7 +29,7 @@ export const AudioUnlockModal: React.FC<AudioUnlockModalProps> = ({ onEnter }) =
         </h2>
 
         <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed font-sans mb-8">
-          The portal between the living and the spirit realm is open. Step inside to awaken the <span className="text-emerald-300 font-semibold">spooky ambient score</span> and hear the <span className="text-purple-300 font-semibold">whispers of lingering entities every 8 seconds</span>.
+          The portal between the living and the spirit realm is open. Step inside to awaken the <span className="text-emerald-300 font-semibold">spooky ambient score</span> and hear the <span className="text-purple-300 font-semibold">whispers of lingering entities echoing unpredictably from the void</span>.
         </p>
 
         {/* Enter Button */}

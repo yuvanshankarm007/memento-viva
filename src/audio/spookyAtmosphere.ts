@@ -1,5 +1,5 @@
 import { elevenLabsAudio } from './elevenLabsAudio';
-import { ofrendaAudio } from './ofrendaAudio';
+import { speakSpokenText } from './speechSynthesis';
 /**
  * Haunted Ambient Score & Paranormal Voice Engine
  * Hacktoberfest 2026: Ghost in the Machine
@@ -11,10 +11,10 @@ import { ofrendaAudio } from './ofrendaAudio';
  *    - Spectral howling wind simulator with resonant filter sweeps
  *    - Rhythmic sub-audible heartbeat (50 BPM)
  *    - Random eerie minor music-box bells
- * 2. Automated Creepy Voice Channeler:
- *    - Triggers every 8 seconds with chilling, varied phrases
+ * 2. Unpredictable Ghost Whisper Channeler:
+ *    - Triggers at randomized, unpredictable intervals (14s - 36s) for organic suspense
  *    - Spatial 3D binaural stereo panning (whispers in left or right ear)
- *    - SpeechSynthesis with eerie formant pitch/rate + spectral whoosh FX
+ *    - High-fidelity ElevenLabs neural voice or natural neural speech with spectral whoosh FX
  *    - Subtitle event subscription for visual ectoplasm captions
  */
 
@@ -73,6 +73,8 @@ class SpookyAtmosphereEngine {
 
   private isRunning: boolean = false;
   private isVoicesEnabled: boolean = true;
+  private minIntervalMs: number = 14000;
+  private maxIntervalMs: number = 36000;
   private whisperTimer: any = null;
   private bellTimer: any = null;
   private heartbeatTimer: any = null;
@@ -82,6 +84,18 @@ class SpookyAtmosphereEngine {
   private bgNodes: AudioNode[] = [];
   private listeners: Set<WhisperListener> = new Set();
   private lastPhraseIdx: number = -1;
+
+  public setWhisperIntervals(minMs: number, maxMs: number) {
+    this.minIntervalMs = Math.max(4000, minMs);
+    this.maxIntervalMs = Math.max(this.minIntervalMs + 2000, maxMs);
+    if (this.isRunning && this.isVoicesEnabled) {
+      this.scheduleRandomWhisper(false);
+    }
+  }
+
+  public getWhisperIntervals(): { minMs: number; maxMs: number } {
+    return { minMs: this.minIntervalMs, maxMs: this.maxIntervalMs };
+  }
 
   public init() {
     if (!this.ctx) {
@@ -111,6 +125,13 @@ class SpookyAtmosphereEngine {
     return () => this.listeners.delete(listener);
   }
 
+  public getContext(): AudioContext | null {
+    if (!this.ctx) {
+      this.init();
+    }
+    return this.ctx;
+  }
+
   public isAudioActive(): boolean {
     return this.isRunning && this.ctx?.state === 'running';
   }
@@ -122,16 +143,18 @@ class SpookyAtmosphereEngine {
   public toggleVoices(): boolean {
     this.isVoicesEnabled = !this.isVoicesEnabled;
     if (this.isVoicesEnabled && this.isRunning) {
-      this.scheduleWhispers();
+      this.scheduleRandomWhisper(true);
     } else {
-      clearInterval(this.whisperTimer);
-      this.whisperTimer = null;
+      if (this.whisperTimer) {
+        clearTimeout(this.whisperTimer);
+        this.whisperTimer = null;
+      }
     }
     return this.isVoicesEnabled;
   }
 
   /**
-   * Start spooky background track + periodic 5s voices
+   * Start spooky background track + unpredictable organic ghost voices
    */
   public start() {
     this.init();
@@ -139,28 +162,13 @@ class SpookyAtmosphereEngine {
 
     this.isRunning = true;
     this.buildSpookySoundscape();
-    this.scheduleWhispers();
+    this.scheduleRandomWhisper(true);
 
-    // Auto-ignite Copal ember crackle and 432Hz sacred chord by default
-    try {
-      ofrendaAudio.ignite();
-    } catch {}
+    // Auto-play Aztec Owl (Tecolote) calls at organic, randomized intervals
+    this.scheduleRandomOwl(true);
 
-    // Auto-play Aztec Owl (Tecolote) calls by default (first at 3.5s, then every 18s)
-    setTimeout(() => {
-      if (this.isRunning) elevenLabsAudio.playOwlHoot();
-    }, 3500);
-    this.owlTimer = setInterval(() => {
-      if (this.isRunning) elevenLabsAudio.playOwlHoot();
-    }, 18000);
-
-    // Auto-play Bat (Murciélago) flutters & echolocation by default (first at 8s, then every 13s)
-    setTimeout(() => {
-      if (this.isRunning) elevenLabsAudio.playBatSwarm();
-    }, 8000);
-    this.batTimer = setInterval(() => {
-      if (this.isRunning) elevenLabsAudio.playBatSwarm();
-    }, 13000);
+    // Auto-play Bat (Murciélago) flutters at organic, randomized intervals
+    this.scheduleRandomBats(true);
   }
 
   /**
@@ -168,17 +176,16 @@ class SpookyAtmosphereEngine {
    */
   public stop() {
     this.isRunning = false;
-    clearInterval(this.whisperTimer);
-    clearInterval(this.bellTimer);
-    clearInterval(this.heartbeatTimer);
-    clearInterval(this.owlTimer);
-    clearInterval(this.batTimer);
+    if (this.whisperTimer) clearTimeout(this.whisperTimer);
+    if (this.bellTimer) clearInterval(this.bellTimer);
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    if (this.owlTimer) clearTimeout(this.owlTimer);
+    if (this.batTimer) clearTimeout(this.batTimer);
     this.whisperTimer = null;
     this.bellTimer = null;
     this.heartbeatTimer = null;
     this.owlTimer = null;
     this.batTimer = null;
-    try { ofrendaAudio.extinguish(); } catch {}
 
     this.bgNodes.forEach(node => {
       try {
@@ -405,25 +412,59 @@ class SpookyAtmosphereEngine {
   }
 
   /**
-   * Schedule creepy voices to speak every 8 seconds
+   * Schedule nocturnal fauna (Aztec Owl / Tecolote) at organic, randomized intervals
    */
-  private scheduleWhispers() {
-    clearInterval(this.whisperTimer);
-    if (!this.isVoicesEnabled) return;
+  private scheduleRandomOwl(isFirst: boolean = false) {
+    if (this.owlTimer) clearTimeout(this.owlTimer);
+    if (!this.isRunning) return;
 
-    // Trigger first voice shortly after start (after 1.5 seconds)
-    setTimeout(() => {
+    const delay = isFirst ? (4000 + Math.random() * 3000) : (22000 + Math.random() * 26000);
+    this.owlTimer = setTimeout(() => {
+      if (this.isRunning) {
+        elevenLabsAudio.playOwlHoot();
+        this.scheduleRandomOwl(false);
+      }
+    }, delay);
+  }
+
+  /**
+   * Schedule nocturnal fauna (Bat / Murciélago) at organic, randomized intervals
+   */
+  private scheduleRandomBats(isFirst: boolean = false) {
+    if (this.batTimer) clearTimeout(this.batTimer);
+    if (!this.isRunning) return;
+
+    const delay = isFirst ? (9000 + Math.random() * 4000) : (18000 + Math.random() * 24000);
+    this.batTimer = setTimeout(() => {
+      if (this.isRunning) {
+        elevenLabsAudio.playBatSwarm();
+        this.scheduleRandomBats(false);
+      }
+    }, delay);
+  }
+
+  /**
+   * Schedule creepy voices to speak at unpredictable random intervals
+   */
+  private scheduleRandomWhisper(isFirst: boolean = false) {
+    if (this.whisperTimer) {
+      clearTimeout(this.whisperTimer);
+      this.whisperTimer = null;
+    }
+    if (!this.isVoicesEnabled || !this.isRunning) return;
+
+    // First voice arrives gently after 3.5s - 5.5s so user experiences it quickly
+    // All subsequent voices arrive unexpectedly with randomized timing (14s - 36s default)
+    const delay = isFirst
+      ? (3500 + Math.random() * 2000)
+      : (this.minIntervalMs + Math.random() * (this.maxIntervalMs - this.minIntervalMs));
+
+    this.whisperTimer = setTimeout(() => {
       if (this.isRunning && this.isVoicesEnabled) {
         this.triggerSingleWhisper();
+        this.scheduleRandomWhisper(false);
       }
-    }, 1500);
-
-    // Then recurrently every 8000ms (8 seconds)
-    this.whisperTimer = setInterval(() => {
-      if (this.isRunning && this.isVoicesEnabled) {
-        this.triggerSingleWhisper();
-      }
-    }, 8000);
+    }, delay);
   }
 
   /**
@@ -438,7 +479,7 @@ class SpookyAtmosphereEngine {
     this.lastPhraseIdx = nextIdx;
 
     const text = CREEPY_PHRASES[nextIdx];
-    // Random 3D spatial pan: left (-0.8), right (+0.8), or center (0.0)
+    // Random 3D spatial pan: left (-0.85), slight left (-0.5), center (0), slight right (0.5), right (+0.85)
     const panOptions = [-0.85, -0.5, 0, 0.5, 0.85];
     const pan = panOptions[Math.floor(Math.random() * panOptions.length)];
 
@@ -454,32 +495,11 @@ class SpookyAtmosphereEngine {
     };
     this.listeners.forEach(l => l(event));
 
-    // Speak aloud using Web Speech API with chilling pitch and cadence
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      // Alternate between low demonic pitch (0.55) and breathy raspy pitch (0.75)
-      utterance.pitch = Math.random() > 0.5 ? 0.55 : 0.72;
-      utterance.rate = 0.75 + Math.random() * 0.15; // Slow, deliberate creepiness
-      utterance.volume = 0.95;
-
-      const voices = window.speechSynthesis.getVoices();
-      // Prefer deep/whispery voices if available
-      const voice = voices.find(v => 
-        v.name.includes('David') || 
-        v.name.includes('George') || 
-        v.name.includes('Google UK English Male') || 
-        v.name.includes('Daniel') ||
-        v.name.includes('Natural')
-      ) || voices[0];
-
-      if (voice) {
-        utterance.voice = voice;
-      }
-
-      window.speechSynthesis.speak(utterance);
-    }
+    // Channel voice using ElevenLabs or user-customized device speech
+    speakSpokenText(text, {
+      isSpooky: true,
+      pan,
+    }).catch(() => {});
   }
 }
 

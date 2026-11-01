@@ -77,6 +77,10 @@ export async function generateCalaveraWithGemma(params: {
   favoriteThings: string[];
   tone?: 'festive' | 'reverent' | 'humorous';
 }): Promise<{ poem: string; modelUsed: string; source: string }> {
+  const cleanFavorites = (params.favoriteThings || [])
+    .map(f => (typeof f === 'string' ? f.trim() : ''))
+    .filter(Boolean);
+
   const prompt = `You are a traditional Mexican Calavera Literaria poet honoring the spirit of ${params.name} on Día de los Muertos.
 A Calavera Literaria is an authentic, satirical, rhythmic poem composed of 4-line octosyllabic stanzas (redondillas or cuartetas) with AABB or ABAB rhyme.
 It traditionally features "La Muerte", "La Catrina", or "La Huesuda" visiting the person, playfully teasing their habits or passions, but celebrating their enduring memory with warmth and honor.
@@ -85,7 +89,7 @@ Details of the honored soul:
 - Name: ${params.name}
 - Who they are: ${params.relationship}
 - Their memory/story: ${params.story}
-- Favorite things & quirks: ${params.favoriteThings.join(', ') || 'pan de muerto, marigolds'}
+- Favorite things & quirks: ${cleanFavorites.join(', ') || 'pan de muerto, flores de cempasúchil'}
 - Tone: ${params.tone || 'festive'}
 
 Generate an authentic, moving 2-to-3 stanza Calavera Literaria in Spanish (with an English poetic translation below it).
@@ -160,7 +164,7 @@ Format:
   }
 
   // 3. Culturally Authentic Procedural Fallback Engine
-  const poem = generateProceduralCalavera(params.name, params.relationship, params.favoriteThings);
+  const poem = generateProceduralCalavera(params.name, params.relationship, cleanFavorites);
   return {
     poem,
     modelUsed: 'Gemma 2 (Autonomous Open-Weight Agent Engine)',
@@ -230,8 +234,9 @@ function detectEntityName(freq: number): string {
 }
 
 function generateProceduralCalavera(name: string, relation: string, favorites: string[]): string {
-  const fav1 = favorites[0] || 'flores de cempasúchil';
-  const fav2 = favorites[1] || 'un dulce cantar';
+  const cleanFavorites = (favorites || []).map(f => f.trim()).filter(Boolean);
+  const fav1 = cleanFavorites[0] || 'flores de cempasúchil';
+  const fav2 = cleanFavorites[1] || 'un dulce cantar';
 
   return `Estaba la Calaca flaca paseando por el panteón,
 buscando a ${name} con copal y devoción.

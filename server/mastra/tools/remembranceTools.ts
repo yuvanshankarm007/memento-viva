@@ -1,7 +1,12 @@
 /**
  * Mastra Agent Tools - Remembrance & Folklore Engine
  * Category: Best Use of Mastra (Hacktoberfest 2026 Week 4)
+ * 
+ * Powered by @mastra/core/tools and Zod schemas for authentic Mesoamerican symbol lookup.
  */
+
+import { createTool } from '@mastra/core/tools';
+import { z } from 'zod';
 
 export interface FolkloreSymbol {
   name: string;
@@ -56,3 +61,43 @@ export function getSymbolLore(symbolKey: string): FolkloreSymbol | undefined {
 export function getAllSymbols(): FolkloreSymbol[] {
   return Object.values(FOLKLORE_SYMBOLS);
 }
+
+/**
+ * Mastra Tool: Look up specific Mesoamerican folklore symbol lore
+ */
+export const folkloreLookupTool = createTool({
+  id: 'folklore-lookup',
+  description: 'Looks up Mesoamerican and Aztec folklore symbols and traditions for Día de los Muertos offerings',
+  inputSchema: z.object({
+    symbolKey: z.string().describe('Key of the symbol, e.g. cempasuchil, copal, pan_de_muerto, candle, sugar_skull, water'),
+  }),
+  outputSchema: z.object({
+    name: z.string(),
+    nuhuMeaning: z.string(),
+    element: z.enum(['earth', 'wind', 'fire', 'water']),
+    lore: z.string(),
+  }).optional(),
+  execute: async ({ context }) => {
+    return getSymbolLore(context.symbolKey);
+  },
+});
+
+/**
+ * Mastra Tool: Retrieve the entire pantheon of altar symbols
+ */
+export const allSymbolsTool = createTool({
+  id: 'all-symbols-catalog',
+  description: 'Retrieves all traditional Día de los Muertos altar offerings and their Aztec elemental associations',
+  inputSchema: z.object({}),
+  outputSchema: z.array(
+    z.object({
+      name: z.string(),
+      nuhuMeaning: z.string(),
+      element: z.enum(['earth', 'wind', 'fire', 'water']),
+      lore: z.string(),
+    })
+  ),
+  execute: async () => {
+    return getAllSymbols();
+  },
+});

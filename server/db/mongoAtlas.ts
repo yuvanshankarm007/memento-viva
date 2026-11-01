@@ -134,6 +134,46 @@ export function isMongoConnected(): boolean {
   return isConnected;
 }
 
+export async function connectRuntimeMongo(uri: string, customDbName?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    if (client) {
+      try { await client.close(); } catch {}
+    }
+    client = new MongoClient(uri.trim(), { serverSelectionTimeoutMS: 6000 });
+    await client.connect();
+    const dbName = customDbName || process.env.MONGODB_DB_NAME || 'memento_viva';
+    db = client.db(dbName);
+    isConnected = true;
+
+    // Persist to .env permanently on disk
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const envPath = path.resolve(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        let content = fs.readFileSync(envPath, 'utf8');
+        const regex = /^MONGODB_URI=.*$/m;
+        if (regex.test(content)) {
+          content = content.replace(regex, `MONGODB_URI=${uri.trim()}`);
+        } else {
+          content += `\nMONGODB_URI=${uri.trim()}`;
+        }
+        fs.writeFileSync(envPath, content, 'utf8');
+      }
+    } catch {}
+
+    const ofrendasCol = db.collection<OfrendaItem>('ofrendas');
+    const count = await ofrendasCol.countDocuments();
+    if (count === 0) {
+      await ofrendasCol.insertMany(INITIAL_OFRENDAS);
+    }
+    return { success: true, message: `Connected to database: ${dbName}` };
+  } catch (err) {
+    isConnected = false;
+    return { success: false, message: (err as Error).message };
+  }
+}
+
 export async function getAllOfrendas(): Promise<OfrendaItem[]> {
   if (isConnected && db) {
     try {

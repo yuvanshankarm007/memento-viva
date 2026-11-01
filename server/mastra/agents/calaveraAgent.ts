@@ -2,12 +2,13 @@
  * Mastra Agent: Calavera Literaria Poet
  * Category: Best Use of Mastra & Best Use of Gemma
  * 
- * Specializes in authoring authentic, lyrical Mexican Calaveras Literarias
- * honoring deceased persons, historical pioneers, and ancestral memories.
+ * Built with @mastra/core Agent architecture, equipped with Aztec folklore tools
+ * and powered by Google Gemma 2 open weights.
  */
 
+import { Agent } from '@mastra/core';
 import { generateCalaveraWithGemma } from '../../models/gemmaClient.js';
-import { getSymbolLore } from '../tools/remembranceTools.js';
+import { folkloreLookupTool, getSymbolLore } from '../tools/remembranceTools.js';
 
 export interface CalaveraAgentInput {
   name: string;
@@ -18,10 +19,27 @@ export interface CalaveraAgentInput {
   tone?: 'festive' | 'reverent' | 'humorous';
 }
 
+/**
+ * Native Mastra Agent instance configured with system prompt, model definition, and remembrance tools
+ */
+export const nativeCalaveraAgent = new Agent({
+  name: 'CalaveraLiterariaAgent',
+  instructions: `You are an authentic Mexican Calavera Literaria poet honoring the spirit of the deceased on Día de los Muertos.
+A Calavera Literaria is an authentic, satirical, rhythmic poem composed of 4-line octosyllabic stanzas (redondillas or cuartetas) with AABB or ABAB rhyme.
+It traditionally features "La Muerte", "La Catrina", or "La Huesuda" visiting the person, playfully teasing their habits or passions, but celebrating their enduring memory with warmth and honor.`,
+  model: {
+    id: 'google/gemma-2-2b-it',
+  },
+  tools: {
+    folkloreLookup: folkloreLookupTool,
+  },
+});
+
 export class CalaveraLiterariaAgent {
   public readonly name = 'CalaveraLiterariaAgent';
   public readonly role = 'Poeta del Mictlán';
-  public readonly description = 'Orchestrates traditional Mexican poetic epitaphs honoring ancestors on Día de los Muertos using Google Gemma 2.';
+  public readonly description = 'Orchestrates traditional Mexican poetic epitaphs honoring ancestors on Día de los Muertos using Mastra and Google Gemma 2.';
+  public readonly mastraAgent = nativeCalaveraAgent;
 
   async execute(input: CalaveraAgentInput) {
     // Enrich with symbolic folklore tools

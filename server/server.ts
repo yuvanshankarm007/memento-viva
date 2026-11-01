@@ -1,12 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-import { initMongo, isMongoConnected, getAllOfrendas, addOfrenda, lightCandleOnOfrenda, updateCalaveraPoem, getRecentSeances } from './db/mongoAtlas.js';
+import { initMongo, isMongoConnected, getAllOfrendas, addOfrenda, lightCandleOnOfrenda, updateCalaveraPoem, getRecentSeances, connectRuntimeMongo } from './db/mongoAtlas.js';
 import { checkGemmaHealth } from './models/gemmaClient.js';
-import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs, elevenLabsClient } from './models/elevenLabsClient.js';
+import { checkElevenLabsHealth, synthesizeVoiceWithElevenLabs, elevenLabsClient, setRuntimeElevenLabsKey, getRuntimeElevenLabsConfig } from './models/elevenLabsClient.js';
 import { mastraHub } from './mastra/index.js';
 import { SystemStatus } from './types.js';
 
@@ -27,6 +28,30 @@ initMongo().catch(err => console.error('MongoDB Atlas init error:', err));
 // ====================================================================
 // HEALTH & SPONSOR INTEGRATION STATUS
 // ====================================================================
+
+// API Root Index - Redirects web browsers to main app or returns JSON directory
+app.get(['/api', '/api/'], (req, res) => {
+  if (req.accepts('html')) {
+    return res.redirect('/');
+  }
+  res.json({
+    name: 'Memento Viva Paranormal API',
+    version: '1.0.0',
+    theme: 'Hacktoberfest 2026: Ghost in the Machine',
+    webAppUrl: '/',
+    endpoints: {
+      health: '/api/health',
+      status: '/api/status',
+      ofrendas: '/api/ofrendas',
+      folklore: '/api/folklore',
+      calaveraGenerate: 'POST /api/calavera/generate',
+      seanceChannel: 'POST /api/seance/channel',
+      seanceLogs: '/api/seance/logs',
+      ttsSpeak: 'POST /api/tts/speak',
+      settingsElevenLabs: 'POST /api/settings/elevenlabs',
+    },
+  });
+});
 
 // Health check endpoint for Render Web Service Blueprint
 app.get('/api/health', (req, res) => {
@@ -192,16 +217,49 @@ app.get('/api/seance/logs', async (req, res) => {
 
 app.post('/api/tts/speak', async (req, res) => {
   try {
-    const { text, voiceId } = req.body;
+    const { text, voiceId, apiKey } = req.body;
     if (!text) {
       return res.status(400).json({ error: 'Text is required for vocalization' });
     }
 
-    const result = await synthesizeVoiceWithElevenLabs(text, voiceId);
+    const result = await synthesizeVoiceWithElevenLabs(text, voiceId, apiKey);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Audio synthesis failed', details: (error as Error).message });
   }
+});
+
+// Check server ElevenLabs key status
+app.get('/api/settings/elevenlabs', (req, res) => {
+  res.json(getRuntimeElevenLabsConfig());
+});
+
+// Dynamic configuration endpoint for setting ElevenLabs keys via UI
+app.post('/api/settings/elevenlabs', (req, res) => {
+  const { apiKey, voiceId } = req.body;
+  if (apiKey) {
+    if (!apiKey.trim().startsWith('sk_')) {
+      return res.status(400).json({ 
+        error: "ElevenLabs API keys must start with 'sk_'. You pasted the Key ID. In ElevenLabs, click '+ Create API Key' and copy the secret key." 
+      });
+    }
+    setRuntimeElevenLabsKey(apiKey, voiceId);
+    return res.json({ success: true, message: 'ElevenLabs configuration permanently saved to .env' });
+  }
+  res.status(400).json({ error: 'apiKey is required' });
+});
+
+// Dynamic configuration endpoint for connecting MongoDB Atlas via UI
+app.post('/api/settings/mongo', async (req, res) => {
+  const { uri, database } = req.body;
+  if (!uri) {
+    return res.status(400).json({ error: 'MongoDB connection URI is required' });
+  }
+  const result = await connectRuntimeMongo(uri, database);
+  if (result.success) {
+    return res.json({ success: true, message: result.message });
+  }
+  res.status(500).json({ error: result.message });
 });
 
 // Sound effects route powered by ElevenLabs Sound Generation API
@@ -237,7 +295,18 @@ app.post('/api/audio/sound-effect', async (req, res) => {
 // STATIC FILE SERVING FOR PRODUCTION (RENDER / DOCKER)
 // ====================================================================
 
-const clientDist = path.resolve(__dirname, '../../dist');
+function resolveDistDir(): string {
+  const candidate1 = path.resolve(__dirname, '../dist'); // dev with tsx: server/ -> dist/
+  const candidate2 = path.resolve(__dirname, '..');      // prod compiled: dist/server/ -> dist/
+  const candidate3 = path.resolve(__dirname, '../../dist');
+
+  if (fs.existsSync(path.join(candidate2, 'index.html'))) return candidate2;
+  if (fs.existsSync(path.join(candidate1, 'index.html'))) return candidate1;
+  if (fs.existsSync(path.join(candidate3, 'index.html'))) return candidate3;
+  return candidate1;
+}
+
+const clientDist = resolveDistDir();
 app.use(express.static(clientDist));
 
 app.get('*', (req, res, next) => {
@@ -253,8 +322,9 @@ app.get('*', (req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🕯️ MEMENTO VIVA SERVER LISTENING ON PORT ${PORT}`);
+  console.log(`\n🕯️ MEMENTO VIVA PORTAL AWAKENED ON PORT ${PORT}`);
   console.log(`💀 Mode: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌟 Hacktoberfest 2026: Ghost in the Machine`);
-  console.log(`🔗 API Base: http://localhost:${PORT}/api\n`);
+  console.log(`🌐 Web Application: http://localhost:${PORT}`);
+  console.log(`🔗 API Base:        http://localhost:${PORT}/api\n`);
 });

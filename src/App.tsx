@@ -1,5 +1,5 @@
-import { ofrendaAudio } from './audio/ofrendaAudio';
 import React, { useState, useEffect } from 'react';
+import { ofrendaAudio } from './audio/ofrendaAudio';
 import { GatewayMode, OfrendaItem, SystemStatus } from './types';
 import { fetchOfrendas, fetchSystemStatus } from './lib/api';
 import { soundManager } from './audio/soundManager';
@@ -38,10 +38,17 @@ export const App: React.FC = () => {
 
   const startAudioExperience = () => {
     setShowAudioUnlock(false);
-    spookyAtmosphere.start();
-    soundManager.setMode(mode);
-    soundManager.startAmbient();
-    try { ofrendaAudio.ignite(); } catch {}
+    if (mode === 'ofrenda') {
+      spookyAtmosphere.stop();
+      try { ofrendaAudio.ignite(); } catch {}
+      soundManager.setMode('ofrenda');
+      soundManager.startAmbient();
+    } else {
+      try { ofrendaAudio.extinguish(); } catch {}
+      spookyAtmosphere.start();
+      soundManager.setMode('seance');
+      soundManager.startAmbient();
+    }
   };
 
   const loadData = async () => {
@@ -60,11 +67,6 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadData();
 
-    // Auto-attempt to start audio immediately
-    try {
-      spookyAtmosphere.start();
-    } catch {}
-
     // Global listener to immediately unlock audio on the very first user interaction
     const unlockHandler = () => {
       startAudioExperience();
@@ -82,11 +84,21 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', unlockHandler);
       window.removeEventListener('touchstart', unlockHandler);
     };
-  }, []);
+  }, [mode]);
 
   const handleModeChange = (newMode: GatewayMode) => {
     setMode(newMode);
     soundManager.setMode(newMode);
+
+    if (newMode === 'ofrenda') {
+      // Transition to warm Día de los Muertos realm
+      spookyAtmosphere.stop();
+      try { ofrendaAudio.ignite(); } catch {}
+    } else {
+      // Transition to paranormal Séance realm
+      try { ofrendaAudio.extinguish(); } catch {}
+      spookyAtmosphere.start();
+    }
   };
 
   const isOfrenda = mode === 'ofrenda';
@@ -139,8 +151,8 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Floating Ghost Whisper Banner (Plays Creepy Voices Every 5 Seconds!) */}
-      <GhostWhisperBanner />
+      {/* Floating Ghost Whisper Banner (Shown exclusively in Séance mode to protect sacred ofrenda reverence) */}
+      {!isOfrenda && <GhostWhisperBanner />}
 
       {/* Footer & DEV Challenge Submission Credits */}
       <footer className="relative z-10 border-t border-slate-900 bg-black/90 py-8 px-4 text-center text-xs text-slate-500 font-mono">
