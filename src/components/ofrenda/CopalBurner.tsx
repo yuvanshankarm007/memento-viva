@@ -31,7 +31,7 @@ interface EmberSpark {
 
 export const CopalBurner: React.FC<CopalBurnerProps> = ({ className = '', onIgniteChange }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isIgnited, setIsIgnited] = useState<boolean>(false);
+  const [isIgnited, setIsIgnited] = useState<boolean>(true);
   const [crackleVol, setCrackleVol] = useState<number>(75);
   const [droneVol, setDroneVol] = useState<number>(55);
   const [draftLabel, setDraftLabel] = useState<string>('Calm');

@@ -1,3 +1,5 @@
+import { elevenLabsAudio } from './elevenLabsAudio';
+import { ofrendaAudio } from './ofrendaAudio';
 /**
  * Haunted Ambient Score & Paranormal Voice Engine
  * Hacktoberfest 2026: Ghost in the Machine
@@ -74,6 +76,8 @@ class SpookyAtmosphereEngine {
   private whisperTimer: any = null;
   private bellTimer: any = null;
   private heartbeatTimer: any = null;
+  private owlTimer: any = null;
+  private batTimer: any = null;
 
   private bgNodes: AudioNode[] = [];
   private listeners: Set<WhisperListener> = new Set();
@@ -136,6 +140,27 @@ class SpookyAtmosphereEngine {
     this.isRunning = true;
     this.buildSpookySoundscape();
     this.scheduleWhispers();
+
+    // Auto-ignite Copal ember crackle and 432Hz sacred chord by default
+    try {
+      ofrendaAudio.ignite();
+    } catch {}
+
+    // Auto-play Aztec Owl (Tecolote) calls by default (first at 3.5s, then every 18s)
+    setTimeout(() => {
+      if (this.isRunning) elevenLabsAudio.playOwlHoot();
+    }, 3500);
+    this.owlTimer = setInterval(() => {
+      if (this.isRunning) elevenLabsAudio.playOwlHoot();
+    }, 18000);
+
+    // Auto-play Bat (Murciélago) flutters & echolocation by default (first at 8s, then every 13s)
+    setTimeout(() => {
+      if (this.isRunning) elevenLabsAudio.playBatSwarm();
+    }, 8000);
+    this.batTimer = setInterval(() => {
+      if (this.isRunning) elevenLabsAudio.playBatSwarm();
+    }, 13000);
   }
 
   /**
@@ -146,9 +171,14 @@ class SpookyAtmosphereEngine {
     clearInterval(this.whisperTimer);
     clearInterval(this.bellTimer);
     clearInterval(this.heartbeatTimer);
+    clearInterval(this.owlTimer);
+    clearInterval(this.batTimer);
     this.whisperTimer = null;
     this.bellTimer = null;
     this.heartbeatTimer = null;
+    this.owlTimer = null;
+    this.batTimer = null;
+    try { ofrendaAudio.extinguish(); } catch {}
 
     this.bgNodes.forEach(node => {
       try {

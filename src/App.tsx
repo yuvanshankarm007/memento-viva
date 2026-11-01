@@ -1,3 +1,4 @@
+import { ofrendaAudio } from './audio/ofrendaAudio';
 import React, { useState, useEffect } from 'react';
 import { GatewayMode, OfrendaItem, SystemStatus } from './types';
 import { fetchOfrendas, fetchSystemStatus } from './lib/api';
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
     spookyAtmosphere.start();
     soundManager.setMode(mode);
     soundManager.startAmbient();
+    try { ofrendaAudio.ignite(); } catch {}
   };
 
   const loadData = async () => {
