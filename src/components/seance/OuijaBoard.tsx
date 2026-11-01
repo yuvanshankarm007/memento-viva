@@ -3,6 +3,7 @@ import { seanceAudio } from '../../audio/seanceAudio';
 import { elevenLabsAudio } from '../../audio/elevenLabsAudio';
 
 interface OuijaBoardProps {
+  spellTargetText?: string | null;
   className?: string;
   onLetterHover?: (letter: string) => void;
   onMessageComplete?: (message: string) => void;
@@ -13,6 +14,7 @@ const LETTERS_ROW_2 = 'NOPQRSTUVWXYZ'.split('');
 const NUMBERS = '1234567890'.split('');
 
 export const OuijaBoard: React.FC<OuijaBoardProps> = ({
+  spellTargetText,
   className = '',
   onLetterHover,
   onMessageComplete
@@ -26,6 +28,13 @@ export const OuijaBoard: React.FC<OuijaBoardProps> = ({
 
   const lastPosRef = useRef({ x: 50, y: 65, time: performance.now() });
   const isAutoSpellingRef = useRef(false);
+
+  // If new text arrives from spirit box, automatically animate spelling
+  useEffect(() => {
+    if (spellTargetText) {
+      spellWord(spellTargetText);
+    }
+  }, [spellTargetText]);
 
   // Play Owl with ElevenLabs
   const handleOwlHoot = async () => {
